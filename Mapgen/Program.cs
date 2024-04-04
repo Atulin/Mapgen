@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using Mapgen;
+using SkiaSharp;
 using Spectre.Console;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -80,13 +81,107 @@ stopwatch.Stop();
 
 AnsiConsole.MarkupLineInterpolated($"Generation took [green bold]{stopwatch.Elapsed}[/]");
 
-var path = AnsiConsole.Ask<string>("Output file path:", "./grid.txt");
-var pretty = AnsiConsole.Confirm("Pretty print?");
+var files = AnsiConsole.Prompt(new MultiSelectionPrompt<string>()
+	.Title("Select files to generate")
+	.PageSize(10)
+	.AddChoices(["image", "blurred image", "text", "pretty text"])
+);
 
-await File.WriteAllTextAsync(path, imageArr.ToStringGrid(pretty));
-AnsiConsole.MarkupLineInterpolated($"File saved in [green bold]{path}[/]");
-
-if (AnsiConsole.Confirm("Open file?"))
+if (files.Contains("image"))
 {
-	FileHelpers.OpenWithDefaultApp(path);
+	AnsiConsole.MarkupLine("[purple bold]Generate image[/]");
+	var path = AnsiConsole.Ask<string>("Output file:", "./grid.png");
+	
+	var img = CreateImage(imageArr, 10);
+	await File.WriteAllBytesAsync(path, img);
+	
+	AnsiConsole.MarkupLineInterpolated($"File saved in [green bold]{path}[/]");
+	if (AnsiConsole.Confirm("Open file?"))
+	{
+		FileHelpers.OpenWithDefaultApp(path);
+	}
+}
+
+if (files.Contains("blurred image"))
+{
+	AnsiConsole.MarkupLine("[purple bold]Generate blurred image[/]");
+	var path = AnsiConsole.Ask<string>("Output file:", "./grid-blurred.png");
+	
+	var img = CreateImage(imageArr, 10, 4);
+	await File.WriteAllBytesAsync(path, img);
+	
+	AnsiConsole.MarkupLineInterpolated($"File saved in [green bold]{path}[/]");
+	if (AnsiConsole.Confirm("Open file?"))
+	{
+		FileHelpers.OpenWithDefaultApp(path);
+	}
+}
+
+if (files.Contains("text"))
+{
+	AnsiConsole.MarkupLine("[purple bold]Generate text file[/]");
+	var path = AnsiConsole.Ask<string>("Output file:", "./grid.txt");
+	
+	await File.WriteAllTextAsync(path, imageArr.ToStringGrid());
+	
+	AnsiConsole.MarkupLineInterpolated($"File saved in [green bold]{path}[/]");
+	if (AnsiConsole.Confirm("Open file?"))
+	{
+		FileHelpers.OpenWithDefaultApp(path);
+	}
+}
+
+if (files.Contains("pretty text"))
+{
+	AnsiConsole.MarkupLine("[purple bold]Generate pretty-printed text file[/]");
+	var path = AnsiConsole.Ask<string>("Output file:", "./grid-pretty.txt");
+	
+	await File.WriteAllTextAsync(path, imageArr.ToStringGrid(true));
+	
+	AnsiConsole.MarkupLineInterpolated($"File saved in [green bold]{path}[/]");
+	if (AnsiConsole.Confirm("Open file?"))
+	{
+		FileHelpers.OpenWithDefaultApp(path);
+	}
+}
+return;
+
+byte[] CreateImage(int[,] arr, float? scale = null, float? blur = null)
+{
+	var wSize = arr.GetLength(0);
+	var hSize = arr.GetLength(1);
+	
+	var bmp = new SKBitmap(wSize, hSize);
+	using (var canvas = new SKCanvas(bmp))
+	{
+		for (var w = 0; w < wSize; w++)
+		{
+			for (var h = 0; h < hSize; h++)
+			{
+				canvas.DrawPoint(w, h, arr[w, h] == 0 ? SKColors.White : SKColors.Black);
+			}
+		}
+
+		canvas.Save();
+		if (scale is {} s)
+		{
+			canvas.Scale(s);
+		}
+	}
+
+	if (blur is {} b)
+	{
+		var newBmp = new SKBitmap((int)(wSize * scale ?? 1), (int)(hSize * scale ?? 1));
+		using var canvas = new SKCanvas(newBmp);
+		using var paint = new SKPaint();
+		
+		paint.ImageFilter = SKImageFilter.CreateBlur(b, b);
+		canvas.DrawImage(SKImage.FromBitmap(bmp), 0, 0, paint);
+		
+		using var blurredImage = SKImage.FromBitmap(newBmp);
+		return blurredImage.Encode().ToArray();
+	}
+
+	using var image = SKImage.FromBitmap(bmp);
+	return image.Encode().ToArray();
 }
