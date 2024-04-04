@@ -11,8 +11,8 @@ AnsiConsole.MarkupLine("Mapgen");
 var stopwatch = new Stopwatch();
 stopwatch.Start();
 
-var width = AnsiConsole.Ask<int>("Map [bold]width[/] in pixels:");
-var height = AnsiConsole.Ask<int>("Map [bold]height[/] in pixels:");
+var width = AnsiConsole.Ask<int>("Map [bold]width[/] in pixels");
+var height = AnsiConsole.Ask<int>("Map [bold]height[/] in pixels");
 var verbose = AnsiConsole.Confirm("Verbose output? [gray](Will slow down generation)[/]", false);
 
 var imageArr = new int[width, height];
@@ -22,8 +22,8 @@ imageArr.Fill(0);
 var startW = Random.Shared.Next((width / 5) * 2, (width / 5) * 4);
 var startH = Random.Shared.Next((height / 5) * 2, (height / 5) * 4);
 
-startW = AnsiConsole.Ask("Start location (width):", startW);
-startH = AnsiConsole.Ask("Start location (height):", startH);
+startW = AnsiConsole.Ask("Start location (width)", startW);
+startH = AnsiConsole.Ask("Start location (height)", startH);
 
 imageArr[startW, startH] = 1;
 AnsiConsole.MarkupLineInterpolated($"Placing the starting pixel at [bold]w: [red]{startW}[/], h: [blue]{startH}[/][/]");
@@ -85,6 +85,7 @@ var generators = new Dictionary<string, FileGeneratorBase>
 {
 	["text file"] = new TextFileGenerator(imageArr),
 	["pretty text file"] = new PrettyTextFileGenerator(imageArr),
+	["image"] = new ImageFileGenerator(imageArr),
 };
 
 var fileTypes = AnsiConsole.Prompt(new MultiSelectionPrompt<string>()

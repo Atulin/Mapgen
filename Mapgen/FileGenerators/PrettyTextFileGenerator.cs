@@ -2,7 +2,7 @@
 
 namespace Mapgen.FileGenerators;
 
-public class PrettyTextFileGenerator(int[,] imageArr) : FileGeneratorBase(imageArr, "./grid.txt")
+public class PrettyTextFileGenerator(int[,] imageArr) : FileGeneratorBase(imageArr, "./grid-pretty.txt")
 {
 	protected override Func<Task> GenerateMethod => async () =>
 	{
