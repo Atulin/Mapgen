@@ -1,4 +1,6 @@
-﻿namespace Mapgen;
+﻿using System.Numerics;
+
+namespace Mapgen;
 
 public static class NumberHelpers
 {

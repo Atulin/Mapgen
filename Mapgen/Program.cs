@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using Mapgen;
+using Mapgen.FileGenerators;
 using Spectre.Console;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -25,7 +26,7 @@ startW = AnsiConsole.Ask("Start location (width):", startW);
 startH = AnsiConsole.Ask("Start location (height):", startH);
 
 imageArr[startW, startH] = 1;
-AnsiConsole.MarkupLineInterpolated($"Placing pixel [bold green]0[/] at [bold]w: [red]{startW}[/], h: [blue]{startH}[/][/]");
+AnsiConsole.MarkupLineInterpolated($"Placing the starting pixel at [bold]w: [red]{startW}[/], h: [blue]{startH}[/][/]");
 
 var maxPixels = imageArr.Length / 3;
 var maxDigits = maxPixels.Digits();
@@ -44,7 +45,7 @@ AnsiConsole.Progress()
 
 		var pixels = 1;
 		while (pixels < maxPixels && !ctx.IsFinished)
-		{
+		{ 
 			int w, h;
 			do
 			{
@@ -80,13 +81,19 @@ stopwatch.Stop();
 
 AnsiConsole.MarkupLineInterpolated($"Generation took [green bold]{stopwatch.Elapsed}[/]");
 
-var path = AnsiConsole.Ask<string>("Output file path:", "./grid.txt");
-var pretty = AnsiConsole.Confirm("Pretty print?");
-
-await File.WriteAllTextAsync(path, imageArr.ToStringGrid(pretty));
-AnsiConsole.MarkupLineInterpolated($"File saved in [green bold]{path}[/]");
-
-if (AnsiConsole.Confirm("Open file?"))
+var generators = new Dictionary<string, FileGeneratorBase>
 {
-	FileHelpers.OpenWithDefaultApp(path);
+	["text file"] = new TextFileGenerator(imageArr),
+	["pretty text file"] = new PrettyTextFileGenerator(imageArr),
+};
+
+var fileTypes = AnsiConsole.Prompt(new MultiSelectionPrompt<string>()
+	.Title("Select file types to generate")
+	.PageSize(generators.Count < 3 ? 3 : generators.Count)
+	.AddChoices(generators.Keys)
+);
+
+foreach (var fileType in fileTypes)
+{
+	await generators[fileType].Generate();
 }
